@@ -22,8 +22,6 @@ function App() {
     e.preventDefault();
     setStatus("saved");
 
-    // Şimdilik sadece konsola basıyoruz,
-    // backend hazır olduğunda buraya fetch/axios eklenebilir.
     console.log("Profil verileri:", {
       diets: formData.diets,
       allergens: formData.allergens,
@@ -31,18 +29,38 @@ function App() {
     });
   }
 
+  // --- EMOJILERI OLUŞTURAN KOD ---
+  const emojiList = [
+    "🍕","🍔","🍟","🌭","🍣","🍤","🍜","🥗","🥙","🌮","🌯","🥐",
+    "🍩","🍪","🍰","🧁","🍦","🍧","🍨","🍎","🍉","🍇","🍓","🍊",
+    "🥑","🥥","🍞","🧀","🥨","🥟","🍱","🍛","🍙","🍘","🍝","🧇"
+  ];
+
+  const repeatedEmojis = Array.from({ length: 240 }, (_, i) => (
+    <span key={i}>{emojiList[i % emojiList.length]}</span>
+  ));
+
   return (
     <div className="app-bg">
+      {/* === EMOJI BACKGROUND LAYER === */}
+      <div className="emoji-bg" aria-hidden="true">
+        {repeatedEmojis}
+      </div>
+
+      {/* === MAIN CARD (BAŞLIK + FORM) === */}
       <div className="profile-card">
-        <h1 className="app-title">Meal Selector</h1>
-        <p className="app-subtitle">
-          Sana en uygun yemek önerilerini hazırlayabilmemiz için önce temel
-          tercihlerini kaydedelim.
-        </p>
+        <div className="title-wrapper">
+          <h1 className="app-title">Meal Selector</h1>
+          <p className="app-subtitle">
+            Sana en uygun yemek önerilerini hazırlayabilmemiz için önce temel
+            tercihlerini kaydedelim.
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit} className="profile-form">
+          {/* BESLENME */}
           <section className="form-section">
-            <h2 className="section-title">🍽️ Beslenme Şekli </h2>
+            <h2 className="section-title">🍽️ Beslenme Şekli</h2>
 
             <div className="form-group">
               <label>Beslenme Şeklin</label>
@@ -55,13 +73,14 @@ function App() {
               />
               <p className="help-text">
                 Birden fazla yazacaksan virgülle ayır:{" "}
-                <span className="mono">vegan, gluten-free</span> gibi.
+                <span className="mono">vegan, gluten-free</span>.
               </p>
             </div>
           </section>
 
+          {/* ALERJENLER */}
           <section className="form-section">
-            <h2 className="section-title">⚠️ Alerjenler <</h2>
+            <h2 className="section-title">⚠️ Alerjenler</h2>
 
             <div className="form-group">
               <label>Alerjin Olan Yiyecekler</label>
@@ -78,6 +97,7 @@ function App() {
             </div>
           </section>
 
+          {/* TERCİH ETTİĞİN YİYECEKLER */}
           <section className="form-section">
             <h2 className="section-title">❤️ Tercih Ettiğin Yiyecekler</h2>
 
@@ -91,8 +111,8 @@ function App() {
                 onChange={handleChange}
               />
               <p className="help-text">
-                LLM bu alanı, sana öneri verirken pozitif ağırlık olarak
-                kullanacak. Yine virgülle ayırabilirsin.
+                LLM bu alanı önerileri iyileştirmek için pozitif ağırlık olarak
+                kullanacak. Virgülle ayırabilirsin.
               </p>
             </div>
           </section>
@@ -103,7 +123,7 @@ function App() {
 
           {status === "saved" && (
             <p className="status-text success">
-              Profil kaydedildi (şimdilik sadece frontend tarafında). 🎉
+              Profil kaydedildi! 🎉 (Şimdilik sadece frontend)
             </p>
           )}
         </form>
