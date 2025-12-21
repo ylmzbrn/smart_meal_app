@@ -1,0 +1,13 @@
+body {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+
+  background: #eaf3ff; 
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
