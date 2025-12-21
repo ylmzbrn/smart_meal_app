@@ -1,29 +1,41 @@
-import os
+"""
+database.py - PostgreSQL Veritabanı Bağlantısı
+smart_eats veritabanına bağlantı ayarları.
+
+⚠️ DİKKAT: Mevcut tablolar kullanılıyor, yeni tablo OLUŞTURULMUYOR.
+"""
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-from pathlib import Path
-from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+# PostgreSQL bağlantı bilgileri
+SQLALCHEMY_DATABASE_URL = "postgresql+psycopg2://postgres:abc123@localhost:5432/smart_eats"
 
+# Engine oluştur
+engine = create_engine(SQLALCHEMY_DATABASE_URL, echo=False)
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+# Session factory
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL bulunamadı. .env dosyasını kontrol et.")
-
-# SQLAlchemy engine
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True
-)
-
-# Session
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
-)
-
-# Base class
+# Base class for models
 Base = declarative_base()
+
+
+def init_db():
+    """
+    Veritabanı başlatma fonksiyonu.
+    ⚠️ create_all() KALDIRILDI - Mevcut tablolar zaten var, yeni tablo oluşturulmayacak.
+    """
+    # Base.metadata.create_all(bind=engine)  # DEVRE DIŞI - Yeni tablo oluşturmuyoruz
+    pass
+
+
+def get_db():
+    """
+    Dependency injection için veritabanı session'ı döndürür.
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
