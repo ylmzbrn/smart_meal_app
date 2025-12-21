@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import "./App.css";
 
+const API_BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+
 function App() {
   const [formData, setFormData] = useState({
     diets: "",
@@ -8,7 +11,9 @@ function App() {
     foodPreferences: "",
   });
 
+  // status: null | "saved" | "error"
   const [status, setStatus] = useState(null);
+  const [errorMsg, setErrorMsg] = useState("");
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -18,15 +23,49 @@ function App() {
     }));
   }
 
-  function handleSubmit(e) {
+  // ✅ Backend'e POST atan gerçek submit
+  async function handleSubmit(e) {
     e.preventDefault();
-    setStatus("saved");
+    setStatus(null);
+    setErrorMsg("");
 
-    console.log("Profil verileri:", {
+    // Backend /profile için payload (snake_case)
+    const payload = {
       diets: formData.diets,
       allergens: formData.allergens,
       food_preferences: formData.foodPreferences,
-    });
+    };
+
+    console.log("Gönderilen payload:", payload);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/profile`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const text = await res.text(); // debug için önce text
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${text}`);
+      }
+
+      // JSON dönerse parse etmeyi dene (dönmeyebilir, sorun değil)
+      let data = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { raw: text };
+      }
+
+      console.log("Backend response:", data);
+      setStatus("saved");
+    } catch (err) {
+      console.error("Profil kaydetme hatası:", err);
+      setErrorMsg(err?.message || "Bilinmeyen hata");
+      setStatus("error");
+    }
   }
 
   // --- EMOJILERI OLUŞTURAN KOD ---
@@ -123,7 +162,13 @@ function App() {
 
           {status === "saved" && (
             <p className="status-text success">
-              Profil kaydedildi! 🎉 (Şimdilik sadece frontend)
+              Profil kaydedildi! 🎉 (backend’e gönderildi)
+            </p>
+          )}
+
+          {status === "error" && (
+            <p className="status-text" style={{ color: "crimson" }}>
+              Profil kaydedilemedi ❌ {errorMsg ? `— ${errorMsg}` : ""}
             </p>
           )}
         </form>
