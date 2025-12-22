@@ -8,7 +8,7 @@ import "../styles/Register.css";
  * - POST isteği ile backend'e veri gönderimi
  * - Loading state ve hata yönetimi
  */
-function Register({ onGoToLogin }) {
+function Register({ onGoToLogin, onRegisterSuccess, API_BASE_URL }) {
   // Form state'leri
   const [formData, setFormData] = useState({
     name: "",
@@ -29,7 +29,6 @@ function Register({ onGoToLogin }) {
       ...prev,
       [name]: value,
     }));
-    // Hata mesajını temizle
     if (error) setError("");
   };
 
@@ -72,7 +71,7 @@ function Register({ onGoToLogin }) {
     };
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/register", {
+      const response = await fetch(`${API_BASE_URL}/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -87,7 +86,7 @@ function Register({ onGoToLogin }) {
 
       // Başarılı kayıt
       setSuccess(true);
-      
+
       // Form'u temizle
       setFormData({
         name: "",
@@ -96,9 +95,14 @@ function Register({ onGoToLogin }) {
         passwordConfirm: "",
       });
 
+      // ✅ Kayıt başarılı → login sayfasına dön
+      setTimeout(() => {
+        onRegisterSuccess?.();
+      }, 600);
     } catch (err) {
       console.error("Kayıt hatası:", err);
       setError(err.message || "Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin.");
+      setSuccess(false);
     } finally {
       setLoading(false);
     }
@@ -133,7 +137,7 @@ function Register({ onGoToLogin }) {
         {success && (
           <div className="success-message">
             <span className="success-icon">✅</span>
-            Kayıt başarılı! Giriş yapabilirsiniz.
+            Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...
           </div>
         )}
 
