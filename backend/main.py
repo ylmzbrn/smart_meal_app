@@ -4,11 +4,13 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Any
+from typing import List, Any, Optional
 import os
 import requests
 
-from database import SessionLocal
+from database import get_db
+
+
 from models import (
     User,
     Diet,
@@ -23,25 +25,28 @@ from models import (
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma3:4b")
 
-app = FastAPI()
+app = FastAPI(
+    title="Meal Selector API",
+    description="Kişiselleştirilmiş yemek önerisi API'si",
+    version="1.0.0"
+)
+
 
 # ---- CORS ----
+FRONTEND_ORIGINS = os.getenv(
+    "FRONTEND_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000"
+)
+
+origins = [origin.strip() for origin in FRONTEND_ORIGINS.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # dev için ok; prod'da domain bazlı yap
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ---- DB Dependency ----
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 
 # -------------------------
 # Pydantic Schemas
@@ -237,23 +242,42 @@ def create_profile(profile: ProfileCreate, db: Session = Depends(get_db)):
 
 @app.post("/chat")
 def chat_with_llm(req: ChatRequest, db: Session = Depends(get_db)):
-    # user_id yoksa anlamlı hata dönelim
     user = db.query(User).filter(User.user_id == req.user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found. Önce /profile kaydetmelisin.")
+        raise HTTPException(
+            status_code=404,
+            detail="User not found. Önce /profile kaydetmelisin."
+        )
 
     prompt = build_prompt(db, req.user_id, req.message)
 
-    payload = {
-        "model": OLLAMA_MODEL,
-        "prompt": prompt,
-        "stream": False,
-    }
+    try:
+        r = requests.post(
+            f"{OLLAMA_BASE_URL}/api/generate",
+            json={
+                "model": OLLAMA_MODEL,
+                "prompt": prompt,
+                "stream": False,
+            },
+            timeout=120,
+        )
+        r.raise_for_status()
+        data = r.json()
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(
+            status_code=503,
+            detail="LLM'e bağlanılamadı. Ollama çalışmıyor olabilir."
+        )
+    except requests.exceptions.Timeout:
+        raise HTTPException(
+            status_code=504,
+            detail="LLM isteği zaman aşımına uğradı."
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"LLM hatası: {str(e)}"
+        )
 
-    r = requests.post(f"{OLLAMA_BASE_URL}/api/generate", json=payload, timeout=120)
-    r.raise_for_status()
-
-    data = r.json()
-    answer = data.get("response", "")
-
+    answer = (data.get("response") or "").strip()
     return {"answer": answer}
