@@ -1,10 +1,20 @@
 import React, { useState } from "react";
 import "./App.css";
 
+import Register from "./pages/Register.js";
+import Login from "./pages/Login.js";
+
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
 
 function App() {
+  // "login" | "register" | "profile"
+  const [currentPage, setCurrentPage] = useState("login");
+
+  const goToLogin = () => setCurrentPage("login");
+  const goToRegister = () => setCurrentPage("register");
+  const goToProfile = () => setCurrentPage("profile");
+
   const [formData, setFormData] = useState({
     diets: "",
     allergens: "",
@@ -51,7 +61,6 @@ function App() {
         throw new Error(`HTTP ${res.status}: ${text}`);
       }
 
-      // JSON dönerse parse etmeyi dene (dönmeyebilir, sorun değil)
       let data = {};
       try {
         data = JSON.parse(text);
@@ -61,6 +70,9 @@ function App() {
 
       console.log("Backend response:", data);
       setStatus("saved");
+
+      // İstersen profil kaydedince chat sayfasına vs geçirebilirsin
+      // şimdilik profile ekranında kalıyoruz.
     } catch (err) {
       console.error("Profil kaydetme hatası:", err);
       setErrorMsg(err?.message || "Bilinmeyen hata");
@@ -79,8 +91,49 @@ function App() {
     <span key={i}>{emojiList[i % emojiList.length]}</span>
   ));
 
+  // ---- SAYFA SWITCH ----
+  if (currentPage === "login") {
+    return (
+      <Login
+        onGoToRegister={goToRegister}
+        // Login başarılı olunca profile geçmek istersen:
+        onLoginSuccess={goToProfile}
+        API_BASE_URL={API_BASE_URL}
+      />
+    );
+  }
+
+  if (currentPage === "register") {
+    return (
+      <Register
+        onGoToLogin={goToLogin}
+        // Register başarılı olunca login'e dönmek istersen:
+        onRegisterSuccess={goToLogin}
+        API_BASE_URL={API_BASE_URL}
+      />
+    );
+  }
+
+  // default: profile
   return (
     <div className="app-bg">
+      {/* Üste mini nav koyduk: login'e dönmek istersen */}
+      <div style={{ position: "fixed", top: 12, left: 12, zIndex: 10 }}>
+        <button
+          type="button"
+          onClick={goToLogin}
+          style={{
+            padding: "8px 12px",
+            borderRadius: 10,
+            border: "1px solid rgba(0,0,0,0.15)",
+            background: "white",
+            cursor: "pointer",
+          }}
+        >
+          ← Login
+        </button>
+      </div>
+
       {/* === EMOJI BACKGROUND LAYER === */}
       <div className="emoji-bg" aria-hidden="true">
         {repeatedEmojis}
