@@ -8,7 +8,7 @@ import "../styles/Login.css";
  * - POST isteği ile backend'e veri gönderimi
  * - Loading state ve hata yönetimi
  */
-function Login({ onGoToRegister }) {
+function Login({ onGoToRegister, onLoginSuccess, API_BASE_URL }) {
   // Form state'leri
   const [formData, setFormData] = useState({
     email: "",
@@ -63,7 +63,7 @@ function Login({ onGoToRegister }) {
     };
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/login", {
+      const response = await fetch(`${API_BASE_URL}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -77,7 +77,7 @@ function Login({ onGoToRegister }) {
       }
 
       const data = await response.json();
-      
+
       // Token'ı localStorage'a kaydet (varsa)
       if (data.token) {
         localStorage.setItem("token", data.token);
@@ -86,9 +86,15 @@ function Login({ onGoToRegister }) {
       // Başarılı giriş
       setSuccess(true);
 
+      // ✅ Login başarılı → profile (form) sayfasına geç
+      // küçük bir gecikme, "Yönlendiriliyorsunuz..." mesajı görünsün
+      setTimeout(() => {
+        onLoginSuccess?.();
+      }, 400);
     } catch (err) {
       console.error("Giriş hatası:", err);
       setError(err.message || "Giriş sırasında bir hata oluştu. Lütfen tekrar deneyin.");
+      setSuccess(false);
     } finally {
       setLoading(false);
     }
@@ -204,4 +210,3 @@ function Login({ onGoToRegister }) {
 }
 
 export default Login;
-
