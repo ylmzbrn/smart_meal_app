@@ -3,10 +3,11 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, EmailStr
 from typing import List, Any, Optional
 import os
 import requests
+import bcrypt
 
 from database import get_db
 
@@ -55,9 +56,11 @@ app.add_middleware(
 class ProfileCreate(BaseModel):
     """
     ✅ Frontend email göndermiyor.
+    ✅ user_id opsiyonel - gönderilmezse guest user kullanılır.
     ✅ diets/allergens/food_preferences artık ID değil İSİM listesi olacak.
        (frontend string gönderse bile kabul edip listeye çeviriyoruz)
     """
+    user_id: Optional[int] = None  # Opsiyonel - yoksa guest user kullanılır
     diets: List[str] = Field(default_factory=list)
     allergens: List[str] = Field(default_factory=list)
     food_preferences: List[str] = Field(default_factory=list)
@@ -83,6 +86,34 @@ class ProfileCreate(BaseModel):
 class ChatRequest(BaseModel):
     user_id: int
     message: str
+
+
+class RegisterRequest(BaseModel):
+    """Kullanıcı kayıt şeması"""
+    name: str
+    email: str
+    password: str
+
+
+class LoginRequest(BaseModel):
+    """Kullanıcı giriş şeması"""
+    email: str
+    password: str
+
+
+# -------------------------
+# Auth Helper Functions
+# -------------------------
+
+def hash_password(password: str) -> str:
+    """Şifreyi bcrypt ile hashle"""
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+
+
+def verify_password(password: str, hashed: str) -> bool:
+    """Şifreyi doğrula"""
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
 
 # -------------------------
@@ -185,19 +216,91 @@ Bu bilgilere göre kişiselleştirilmiş öneri yap.
 # Endpoints
 # -------------------------
 
+@app.post("/register")
+def register_user(req: RegisterRequest, db: Session = Depends(get_db)):
+    """
+    Yeni kullanıcı kaydı
+    - Email unique olmalı
+    - Şifre bcrypt ile hashlenir
+    """
+    # Email zaten kayıtlı mı kontrol et
+    existing_user = db.query(User).filter(User.email == req.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Bu e-posta adresi zaten kayıtlı."
+        )
+    
+    # Yeni kullanıcı oluştur
+    hashed_pw = hash_password(req.password)
+    new_user = User(
+        username=req.name,
+        email=req.email,
+        password_hash=hashed_pw
+    )
+    
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    return {
+        "ok": True,
+        "message": "Kayıt başarılı!",
+        "user_id": new_user.user_id
+    }
+
+
+@app.post("/login")
+def login_user(req: LoginRequest, db: Session = Depends(get_db)):
+    """
+    Kullanıcı girişi
+    - Email ve şifre doğrulaması
+    - Başarılı girişte user_id döner
+    """
+    # Kullanıcıyı bul
+    user = db.query(User).filter(User.email == req.email).first()
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="E-posta veya şifre hatalı."
+        )
+    
+    # Şifre kontrolü
+    if not user.password_hash or not verify_password(req.password, user.password_hash):
+        raise HTTPException(
+            status_code=401,
+            detail="E-posta veya şifre hatalı."
+        )
+    
+    return {
+        "ok": True,
+        "message": "Giriş başarılı!",
+        "user_id": user.user_id,
+        "username": user.username,
+        "token": f"user_{user.user_id}"  # Basit token (gerçek projede JWT kullan)
+    }
+
+
 @app.post("/profile")
 def create_profile(profile: ProfileCreate, db: Session = Depends(get_db)):
     """
     ✅ Email beklemez.
+    ✅ user_id opsiyonel - gönderilmezse guest user kullanılır.
     ✅ Frontend string veya list gönderebilir.
     ✅ DB'ye join tablolarıyla yazar.
 
     Davranış:
-    - guest user'ı bul/oluştur
+    - user_id varsa onu kullan, yoksa guest user'ı bul/oluştur
     - önce eski linkleri sil
     - sonra yeni diet/allergen/preference isimlerini (yoksa oluşturup) ilişkilendir
     """
-    user = _get_or_create_guest_user(db)
+    # user_id gönderilmişse onu kullan, yoksa guest user
+    if profile.user_id:
+        user = db.query(User).filter(User.user_id == profile.user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+    else:
+        user = _get_or_create_guest_user(db)
 
     f = _get_model_fields()
 
