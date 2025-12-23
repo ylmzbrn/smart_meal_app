@@ -87,9 +87,13 @@ function Login({ onGoToRegister, onLoginSuccess, API_BASE_URL }) {
       setSuccess(true);
 
       // ✅ Login başarılı → profile (form) sayfasına geç
-      // küçük bir gecikme, "Yönlendiriliyorsunuz..." mesajı görünsün
+      // User bilgisini callback'e geçir
       setTimeout(() => {
-        onLoginSuccess?.();
+        onLoginSuccess?.({
+          user_id: data.user_id,
+          username: data.username,
+          token: data.token
+        });
       }, 400);
     } catch (err) {
       console.error("Giriş hatası:", err);

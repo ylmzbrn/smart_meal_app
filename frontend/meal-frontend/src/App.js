@@ -10,10 +10,22 @@ const API_BASE_URL =
 function App() {
   // "login" | "register" | "profile"
   const [currentPage, setCurrentPage] = useState("login");
+  
+  // ✅ Giriş yapan kullanıcı bilgisi
+  const [currentUser, setCurrentUser] = useState(null);
 
-  const goToLogin = () => setCurrentPage("login");
+  const goToLogin = () => {
+    setCurrentUser(null); // Çıkış yaparken kullanıcıyı temizle
+    setCurrentPage("login");
+  };
   const goToRegister = () => setCurrentPage("register");
   const goToProfile = () => setCurrentPage("profile");
+  
+  // ✅ Login başarılı olunca kullanıcı bilgisini kaydet
+  const handleLoginSuccess = (userData) => {
+    setCurrentUser(userData);
+    setCurrentPage("profile");
+  };
 
   const [formData, setFormData] = useState({
     diets: "",
@@ -40,13 +52,16 @@ function App() {
     setErrorMsg("");
 
     // Backend /profile için payload (snake_case)
+    // ✅ user_id varsa ekle, yoksa guest kullanılacak
     const payload = {
+      user_id: currentUser?.user_id || null,
       diets: formData.diets,
       allergens: formData.allergens,
       food_preferences: formData.foodPreferences,
     };
 
     console.log("Gönderilen payload:", payload);
+    console.log("Current user:", currentUser);
 
     try {
       const res = await fetch(`${API_BASE_URL}/profile`, {
@@ -96,8 +111,8 @@ function App() {
     return (
       <Login
         onGoToRegister={goToRegister}
-        // Login başarılı olunca profile geçmek istersen:
-        onLoginSuccess={goToProfile}
+        // ✅ Login başarılı olunca user bilgisiyle birlikte profile geç
+        onLoginSuccess={handleLoginSuccess}
         API_BASE_URL={API_BASE_URL}
       />
     );
@@ -143,6 +158,11 @@ function App() {
       <div className="profile-card">
         <div className="title-wrapper">
           <h1 className="app-title">Meal Selector</h1>
+          {currentUser && (
+            <p style={{ textAlign: "center", color: "#4a90d9", fontWeight: 600, margin: "8px 0" }}>
+              Hoş geldin, {currentUser.username}! 👋
+            </p>
+          )}
           <p className="app-subtitle">
             Sana en uygun yemek önerilerini hazırlayabilmemiz için önce temel
             tercihlerini kaydedelim.
