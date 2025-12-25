@@ -1,0 +1,182 @@
+/* === ARKA PLAN === */
+.app-bg {
+  min-height: 100vh;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Daha açık mavi → lila arası gradient */
+  background:
+    radial-gradient(circle at top, #e4f0ff 0, transparent 48%),
+    linear-gradient(180deg, #78c8ff);
+
+  font-family: system-ui, sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.emoji-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+
+  display: grid;
+  grid-template-columns: repeat(20, 1fr); /* daha sık kolona böl */
+  grid-auto-rows: 1fr;                   /* aşağıya doğru da dolsun */
+  gap: 12px;
+  padding: 20px;
+
+  font-size: 20px;
+  
+}
+
+.emoji-bg span {
+  opacity: 0.7; /* sadece emoji biraz saydam */
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
+}
+
+
+.emoji-bg span {
+  opacity: 0.95;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15)); /* hafif gölge → daha canlı */
+}
+
+.profile-card {
+  position: relative;
+  z-index: 1;   /* emojilerin üstüne çıksın */
+  /* diğer stiller aynı */
+}
+
+/* === TITLE === */
+.app-title {
+  font-size: 32px;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.app-subtitle {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 28px;
+}
+
+/* === FORM === */
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+/* === SECTIONS === */
+.form-section {
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: #fafafa;
+  border: 1px solid #eee;
+}
+
+/* === SECTION TITLE === */
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+/* === INPUT === */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.form-group input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d0d0d0;
+  font-size: 14px;
+  background: white;
+  transition: 0.18s ease;
+}
+
+.form-group input:focus {
+  border-color: #ff8a47;
+  box-shadow: 0 0 0 3px rgba(255, 138, 71, 0.28);
+}
+
+.help-text {
+  font-size: 11px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.mono {
+  font-family: Menlo, Monaco, monospace;
+}
+
+/* === BUTTON === */
+.submit-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 999px;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ff8a47, #ff6f61);
+  color: white;
+  box-shadow: 0 12px 24px rgba(255, 112, 77, 0.35);
+  transition: 0.2s;
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+}
+
+.submit-btn:active {
+  transform: translateY(0px);
+}
+
+/* === STATUS TEXT === */
+.status-text {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.status-text.success {
+  color: #2e7d32;
+}
+
+/* === MOBILE === */
+@media (max-width: 600px) {
+  .profile-card {
+    padding: 24px 18px;
+  }
+
+  .app-title {
+    font-size: 26px;
+  }
+
+  .section-title {
+    font-size: 15px;
+  }
+}
+.profile-card {
+  position: relative;
+  z-index: 2;  /* emojilerin üstünde */
+}
+
+.title-wrapper {
+  position: relative;
+  z-index: 3;  /* emojilerden kesinlikle önde */
+}
